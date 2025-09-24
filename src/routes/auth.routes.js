@@ -1,25 +1,51 @@
-const router = require('express').Router();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { body } = require('express-validator');
-const validate = require('../middleware/validate');
-const User = require('../models/User');
+// src/routes/auth.routes.js
+import express from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
-router.post('/login',
-  body('email').isEmail(),
-  body('password').isLength({ min: 6 }),
-  validate,
-  async (req, res) => {
-    const { email, password, expoPushToken } = req.body;
+// 👇 asegúrate de que tu modelo exista en src/models/User.js
+import User from "../models/User.js";
+
+const router = express.Router();
+
+// POST /api/auth/login
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Busca usuario en BD
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: 'Credenciales inválidas' });
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(400).json({ error: 'Credenciales inválidas' });
-    if (expoPushToken) { user.expoPushToken = expoPushToken; await user.save(); }
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no encontrado" });
+    }
 
-    // incluir driverRef en el token para facilitar acceso en rutas driver
-    const token = jwt.sign({ id: user._id, role: user.role, driverRef: user.driverRef }, process.env.JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, role: user.role, driverRef: user.driverRef });
-  });
+    // 2. Valida contraseña
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(401).json({ message: "Contraseña incorrecta" });
+    }
 
-module.exports = router;
+    // 3. Genera token con driverRef si aplica
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        driverRef: user.driverRef || null,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 4. Respuesta
+    res.json({
+      token,
+      role: user.role,             // "admin" o "driver"
+      driverRef: user.driverRef || null,
+    });
+  } catch (err) {
+    console.error("❌ Error en login:", err);
+    res.status(500).json({ message: "Error interno en login" });
+  }
+});
+
+export default router;

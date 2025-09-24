@@ -1,14 +1,22 @@
-const jwt = require('jsonwebtoken');
+// src/middleware/auth.js
+import jwt from "jsonwebtoken";
 
-module.exports = (req, res, next) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'No token' });
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // { id, role, driverRef? }
-    next();
-  } catch (e) {
-    return res.status(401).json({ error: 'Token inválido' });
+export function authMiddleware(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) {
+    return res.status(401).json({ message: "Token requerido" });
   }
-};
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Token inválido" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // aquí va { id, role, ... }
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Token no válido o expirado" });
+  }
+}

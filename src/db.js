@@ -1,10 +1,14 @@
-const mongoose = require('mongoose');
+// src/db.js
+import mongoose from "mongoose";
 
-module.exports = async (uri) => {
-  mongoose.set('strictQuery', true);
-  await mongoose.connect(uri, { 
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
-  console.log('✅ MongoDB conectado');
+const connect = async (uri) => {
+  try {
+    await mongoose.connect(uri);
+    console.log("✅ MongoDB conectado");
+  } catch (err) {
+    console.error("❌ Error conectando MongoDB:", err);
+    throw err;
+  }
 };
+
+export default connect;
