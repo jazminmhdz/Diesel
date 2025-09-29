@@ -1,10 +1,9 @@
+// src/app.js (BACKEND)
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 
-// 📌 Rutas
+// Rutas
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import driverRoutes from "./routes/driver.routes.js";
@@ -12,35 +11,23 @@ import reportsRoutes from "./routes/reports.routes.js";
 
 const app = express();
 
-// 🔒 Seguridad
-app.use(helmet());
-
-// 🌐 CORS
-app.use(
-  cors({
-    origin: "*", // si quieres, aquí puedes poner la URL de tu app frontend
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// 📋 Logger
+// Middlewares globales
+app.use(cors());
+app.use(express.json());
 app.use(morgan("dev"));
 
-// 📝 Body parser
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+// Rutas principales
+app.use("/api/auth", authRoutes);      // login, me
+app.use("/api/admin", adminRoutes);    // rutas admin
+app.use("/api/driver", driverRoutes);  // rutas chofer
+app.use("/api/reports", reportsRoutes);// alertas, rendimiento
 
-// ⏱ Rate limiter
-app.use(rateLimit({ windowMs: 60 * 1000, max: 120 }));
-
-// 🚦 Rutas principales
-app.use("/api/auth", authRoutes);     // login / registro admin/chofer
-app.use("/api/admin", adminRoutes);   // todo lo de admin (camiones, choferes, historial tickets)
-app.use("/api/driver", driverRoutes); // todo lo de chofer (perfil, camión asignado, subir tickets, alertas)
-app.use("/api/reports", reportsRoutes); // reportes generales
-
-// ✅ Healthcheck
+// Ruta de prueba
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// Manejo de rutas inexistentes
+app.use((req, res) => {
+  res.status(404).json({ message: "Endpoint no encontrado" });
+});
 
 export default app;

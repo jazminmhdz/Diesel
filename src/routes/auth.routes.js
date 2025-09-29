@@ -2,9 +2,8 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-
-// 👇 asegúrate de que tu modelo exista en src/models/User.js
 import User from "../models/User.js";
+import { authMiddleware } from "../middleware/auth.js"; // ← confirmar nombre carpeta "middleware"
 
 const router = express.Router();
 
@@ -13,38 +12,44 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Busca usuario en BD
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Usuario no encontrado" });
-    }
+    if (!user) return res.status(401).json({ message: "Usuario no encontrado" });
 
-    // 2. Valida contraseña
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return res.status(401).json({ message: "Contraseña incorrecta" });
-    }
+    if (!valid) return res.status(401).json({ message: "Contraseña incorrecta" });
 
-    // 3. Genera token con driverRef si aplica
     const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-        driverRef: user.driverRef || null,
-      },
+      { id: user._id, role: user.role, driverRef: user.driverRef || null },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // 4. Respuesta
     res.json({
       token,
-      role: user.role,             // "admin" o "driver"
-      driverRef: user.driverRef || null,
+      role: user.role,
+      driverRef: user.driverRef || null
     });
   } catch (err) {
     console.error("❌ Error en login:", err);
     res.status(500).json({ message: "Error interno en login" });
+  }
+});
+
+// GET /api/auth/me
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json({
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      driverRef: user.driverRef || null
+    });
+  } catch (err) {
+    console.error("❌ Error en /me:", err);
+    res.status(500).json({ message: "Error interno en /me" });
   }
 });
 
