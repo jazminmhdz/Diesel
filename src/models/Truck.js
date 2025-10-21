@@ -1,42 +1,42 @@
+// src/models/Truck.js
 import mongoose from "mongoose";
 
 const truckSchema = new mongoose.Schema(
   {
     economicNumber: {
       type: String,
-      required: true,
+      required: [true, "El número económico es obligatorio"],
       unique: true,
-      trim: true,
     },
     vin: {
       type: String,
-      required: true,
-      trim: true,
+      required: [true, "El VIN es obligatorio"],
+      unique: true,
     },
-    model: {
+    brand: {
       type: String,
-      required: true,
+      required: [true, "La marca es obligatoria"],
     },
     year: {
       type: Number,
-      required: true,
+      required: [true, "El año del camión es obligatorio"],
     },
-    expectedMpgMin: {
-      type: Number,
-      default: 5,
+    platesMx: {
+      type: String,
+      required: [true, "Las placas son obligatorias"],
     },
-    expectedMpgMax: {
-      type: Number,
-      default: 10,
+    platesUsa: {
+      type: String,
+      default: "",
     },
     driver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
       default: null,
     },
-    active: {
-      type: Boolean,
-      default: true,
+    image: {
+      type: String,
+      default: "", // URL de la imagen del camión (si se sube)
     },
   },
   { timestamps: true }

@@ -1,34 +1,31 @@
+// src/models/Driver.js
 import mongoose from "mongoose";
 
 const driverSchema = new mongoose.Schema(
   {
-    name: {
+    fullName: {
       type: String,
-      required: true,
+      required: [true, "El nombre del conductor es obligatorio"],
       trim: true,
     },
     licenseNumber: {
       type: String,
-      required: true,
-      trim: true,
+      required: [true, "El número de licencia es obligatorio"],
+      unique: true,
     },
-    phone: {
+    type: {
       type: String,
-      required: true,
-      trim: true,
+      enum: ["CRUCE", "LOCAL"],
+      required: [true, "El tipo de chofer es obligatorio (CRUCE o LOCAL)"],
     },
-    badge: {
+    gafeteNumber: {
       type: String,
-      trim: true,
+      default: "",
     },
     assignedTruck: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Truck",
       default: null,
-    },
-    userRef: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
     },
   },
   { timestamps: true }

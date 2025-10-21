@@ -1,244 +1,188 @@
-import User from "../models/User.js";
+// src/controllers/admin.controller.js
 import Driver from "../models/Driver.js";
 import Truck from "../models/Truck.js";
 import Ticket from "../models/Ticket.js";
-import bcrypt from "bcryptjs";
-import path from "path";
 
-/* ===================== 🚛 CAMIONES ===================== */
-
-// Obtener todos los camiones
-export const getAllTrucks = async (req, res) => {
-  try {
-    const trucks = await Truck.find().populate("driver", "name");
-    res.json(trucks);
-  } catch (err) {
-    res.status(500).json({ message: "Error al obtener camiones", error: err.message });
-  }
-};
-
-// Crear camión
-export const createTruck = async (req, res) => {
-  try {
-    const { economicNumber, vin, model, year, expectedMpgMin, expectedMpgMax } = req.body;
-
-    if (!economicNumber || !vin || !model || !year) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+// ===============================
+// 📋 CONTROLADOR DEL ADMINISTRADOR
+// ===============================
+export const adminController = {
+  // 📌 Obtener todos los choferes
+  async getDrivers(req, res) {
+    try {
+      const drivers = await Driver.find().populate("assignedTruck", "economicNumber model");
+      res.json(drivers);
+    } catch (err) {
+      res.status(500).json({ message: "Error obteniendo choferes", error: err.message });
     }
+  },
 
-    const exists = await Truck.findOne({ economicNumber });
-    if (exists) return res.status(400).json({ message: "Ya existe un camión con ese número económico" });
+  // ➕ Crear nuevo chofer
+  async createDriver(req, res) {
+    try {
+      const { name, licenseNumber, type, badge } = req.body;
 
-    const truck = await Truck.create({
-      economicNumber,
-      vin,
-      model,
-      year,
-      expectedMpgMin: expectedMpgMin || 4,
-      expectedMpgMax: expectedMpgMax || 10,
-    });
+      if (!name || !licenseNumber || !type) {
+        return res.status(400).json({ message: "Faltan datos obligatorios" });
+      }
 
-    res.status(201).json(truck);
-  } catch (err) {
-    res.status(500).json({ message: "Error al crear camión", error: err.message });
-  }
-};
+      const exists = await Driver.findOne({ licenseNumber });
+      if (exists) return res.status(400).json({ message: "Ya existe un chofer con esa licencia" });
 
-// Actualizar camión
-export const updateTruck = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const truck = await Truck.findByIdAndUpdate(id, req.body, { new: true });
-    if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
-    res.json(truck);
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar camión", error: err.message });
-  }
-};
-
-// Eliminar camión
-export const deleteTruck = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const truck = await Truck.findById(id);
-    if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
-
-    // Si está asignado a un chofer, lo desvinculamos
-    if (truck.driver) {
-      await Driver.findByIdAndUpdate(truck.driver, { assignedTruck: null });
+      const driver = await Driver.create({ name, licenseNumber, type, badge: badge || "" });
+      res.json({ message: "Chofer creado correctamente", driver });
+    } catch (err) {
+      res.status(500).json({ message: "Error creando chofer", error: err.message });
     }
+  },
 
-    await Truck.findByIdAndDelete(id);
-    res.json({ message: "Camión eliminado correctamente" });
-  } catch (err) {
-    res.status(500).json({ message: "Error al eliminar camión", error: err.message });
-  }
-};
+  // ✏️ Editar chofer
+  async updateDriver(req, res) {
+    try {
+      const { id } = req.params;
+      const { name, licenseNumber, type, badge } = req.body;
 
-/* ===================== 👨‍🔧 CHOFERES ===================== */
+      const driver = await Driver.findByIdAndUpdate(
+        id,
+        { name, licenseNumber, type, badge },
+        { new: true }
+      );
 
-// Obtener todos los choferes
-export const getAllDrivers = async (req, res) => {
-  try {
-    const drivers = await Driver.find().populate("assignedTruck", "economicNumber model");
-    res.json(drivers);
-  } catch (err) {
-    res.status(500).json({ message: "Error al obtener choferes", error: err.message });
-  }
-};
+      if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
 
-// Crear chofer
-export const createDriver = async (req, res) => {
-  try {
-    const { name, licenseNumber, phone, truck } = req.body;
-
-    if (!name || !licenseNumber || !phone) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+      res.json({ message: "Chofer actualizado correctamente", driver });
+    } catch (err) {
+      res.status(500).json({ message: "Error actualizando chofer", error: err.message });
     }
+  },
 
-    // Buscar camión si se asigna uno
-    let assignedTruck = null;
-    if (truck) {
-      const truckFound = await Truck.findById(truck);
-      if (!truckFound) return res.status(400).json({ message: "Camión no encontrado" });
-      if (truckFound.driver) return res.status(400).json({ message: "Camión ya está asignado" });
-      assignedTruck = truckFound._id;
-    }
+  // ❌ Eliminar chofer
+  async deleteDriver(req, res) {
+    try {
+      const { id } = req.params;
+      const driver = await Driver.findById(id);
+      if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
 
-    // Crear usuario y chofer
-    const email = `${name.replace(/\s+/g, "").toLowerCase()}@diesel.local`;
-    const password = await bcrypt.hash("driver123", 10);
-
-    const user = await User.create({
-      email,
-      password,
-      role: "driver",
-    });
-
-    const driver = await Driver.create({
-      name,
-      licenseNumber,
-      phone,
-      assignedTruck,
-      userRef: user._id,
-    });
-
-    // Si tiene camión, actualizarlo
-    if (assignedTruck) {
-      await Truck.findByIdAndUpdate(assignedTruck, { driver: driver._id });
-    }
-
-    res.status(201).json(driver);
-  } catch (err) {
-    res.status(500).json({ message: "Error al crear chofer", error: err.message });
-  }
-};
-
-// Actualizar chofer
-export const updateDriver = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, licenseNumber, phone, truck } = req.body;
-
-    const driver = await Driver.findById(id);
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    // Si se asigna un nuevo camión
-    if (truck) {
-      const newTruck = await Truck.findById(truck);
-      if (!newTruck) return res.status(400).json({ message: "Camión no encontrado" });
-      if (newTruck.driver && newTruck.driver.toString() !== driver._id.toString())
-        return res.status(400).json({ message: "Camión ya está ocupado" });
-
-      // Desvincular camión anterior
+      // Liberar camión si estaba asignado
       if (driver.assignedTruck) {
         await Truck.findByIdAndUpdate(driver.assignedTruck, { driver: null });
       }
 
-      // Vincular nuevo camión
-      await Truck.findByIdAndUpdate(truck, { driver: driver._id });
-      driver.assignedTruck = truck;
+      await driver.deleteOne();
+      res.json({ message: "Chofer eliminado correctamente" });
+    } catch (err) {
+      res.status(500).json({ message: "Error eliminando chofer", error: err.message });
     }
+  },
 
-    driver.name = name || driver.name;
-    driver.licenseNumber = licenseNumber || driver.licenseNumber;
-    driver.phone = phone || driver.phone;
-    await driver.save();
-
-    res.json(driver);
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar chofer", error: err.message });
-  }
-};
-
-// Eliminar chofer
-export const deleteDriver = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const driver = await Driver.findById(id);
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    // Desvincular camión si tiene uno
-    if (driver.assignedTruck) {
-      await Truck.findByIdAndUpdate(driver.assignedTruck, { driver: null });
+  // 🚛 Obtener todos los camiones
+  async getTrucks(req, res) {
+    try {
+      const trucks = await Truck.find().populate("driver", "name");
+      res.json(trucks);
+    } catch (err) {
+      res.status(500).json({ message: "Error obteniendo camiones", error: err.message });
     }
+  },
 
-    // Eliminar usuario asociado
-    if (driver.userRef) {
-      await User.findByIdAndDelete(driver.userRef);
+  // ➕ Crear nuevo camión
+  async createTruck(req, res) {
+    try {
+      const { economicNumber, vin, model, year, plateMx, plateUsa } = req.body;
+
+      if (!economicNumber || !vin || !model) {
+        return res.status(400).json({ message: "Faltan datos obligatorios" });
+      }
+
+      const exists = await Truck.findOne({ economicNumber });
+      if (exists) return res.status(400).json({ message: "Ya existe un camión con ese número económico" });
+
+      const truck = await Truck.create({ economicNumber, vin, model, year, plateMx, plateUsa });
+      res.json({ message: "Camión creado correctamente", truck });
+    } catch (err) {
+      res.status(500).json({ message: "Error creando camión", error: err.message });
     }
+  },
 
-    await Driver.findByIdAndDelete(id);
-    res.json({ message: "Chofer eliminado correctamente" });
-  } catch (err) {
-    res.status(500).json({ message: "Error al eliminar chofer", error: err.message });
-  }
-};
+  // ✏️ Editar camión
+  async updateTruck(req, res) {
+    try {
+      const { id } = req.params;
+      const { economicNumber, vin, model, year, plateMx, plateUsa } = req.body;
 
-/* ===================== 🎟️ TICKETS ===================== */
+      const truck = await Truck.findByIdAndUpdate(
+        id,
+        { economicNumber, vin, model, year, plateMx, plateUsa },
+        { new: true }
+      );
 
-// Obtener todos los tickets
-export const getAllTickets = async (req, res) => {
-  try {
-    const tickets = await Ticket.find()
-      .populate("driver", "name")
-      .populate("truck", "economicNumber");
-    res.json(tickets);
-  } catch (err) {
-    res.status(500).json({ message: "Error al obtener tickets", error: err.message });
-  }
-};
-
-// Crear ticket
-export const createTicket = async (req, res) => {
-  try {
-    const { truckNumber, gallons, miles, state, pricePerGallon } = req.body;
-
-    if (!truckNumber || !gallons || !miles || !state) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+      if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
+      res.json({ message: "Camión actualizado correctamente", truck });
+    } catch (err) {
+      res.status(500).json({ message: "Error actualizando camión", error: err.message });
     }
+  },
 
-    const truck = await Truck.findOne({ economicNumber: truckNumber }).populate("driver");
-    if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
-    if (!truck.driver) return res.status(400).json({ message: "El camión no tiene chofer asignado" });
+  // ❌ Eliminar camión
+  async deleteTruck(req, res) {
+    try {
+      const { id } = req.params;
+      const truck = await Truck.findById(id);
+      if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
 
-    const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
-    const mpg = (miles / gallons).toFixed(2);
+      // Liberar chofer si estaba asignado
+      if (truck.driver) {
+        await Driver.findByIdAndUpdate(truck.driver, { assignedTruck: null });
+      }
 
-    const ticket = await Ticket.create({
-      driver: truck.driver._id,
-      truck: truck._id,
-      photoUrl,
-      date: new Date(),
-      state,
-      gallons,
-      miles,
-      pricePerGallon: pricePerGallon || 0,
-      mpg,
-    });
+      await truck.deleteOne();
+      res.json({ message: "Camión eliminado correctamente" });
+    } catch (err) {
+      res.status(500).json({ message: "Error eliminando camión", error: err.message });
+    }
+  },
 
-    res.status(201).json(ticket);
-  } catch (err) {
-    res.status(500).json({ message: "Error al crear ticket", error: err.message });
-  }
+  // 🔄 Asignar camión a chofer
+  async assignTruck(req, res) {
+    try {
+      const { driverId, truckId } = req.body;
+
+      const driver = await Driver.findById(driverId);
+      const truck = await Truck.findById(truckId);
+
+      if (!driver || !truck)
+        return res.status(404).json({ message: "Chofer o camión no encontrados" });
+
+      if (truck.driver && truck.driver.toString() !== driverId)
+        return res.status(400).json({ message: "El camión ya está asignado a otro chofer" });
+
+      // Si el chofer tenía otro camión, liberarlo
+      if (driver.assignedTruck && driver.assignedTruck.toString() !== truckId) {
+        await Truck.findByIdAndUpdate(driver.assignedTruck, { driver: null });
+      }
+
+      // Asignar relación mutua
+      driver.assignedTruck = truck._id;
+      truck.driver = driver._id;
+
+      await driver.save();
+      await truck.save();
+
+      res.json({ message: "Camión asignado correctamente", driver, truck });
+    } catch (err) {
+      res.status(500).json({ message: "Error asignando camión", error: err.message });
+    }
+  },
+
+  // 📊 Ver todos los tickets
+  async getTickets(req, res) {
+    try {
+      const tickets = await Ticket.find()
+        .populate("driver", "name")
+        .populate("truck", "economicNumber");
+      res.json(tickets);
+    } catch (err) {
+      res.status(500).json({ message: "Error obteniendo tickets", error: err.message });
+    }
+  },
 };
