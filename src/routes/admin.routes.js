@@ -1,3 +1,4 @@
+// src/routes/admin.routes.js
 import express from "express";
 import {
   getAllDrivers,
@@ -11,33 +12,34 @@ import {
   getAllTickets,
   createTicket,
   assignTruckToDriver,
+  unassignTruckFromDriver,
+  getTruckAssignments,
 } from "../controllers/admin.controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
 
 const router = express.Router();
-
-/* ---------------- 🔐 Middleware de autenticación ---------------- */
 router.use(authMiddleware);
 
-/* ========================= 🚛 CAMIONES ========================= */
+// 🚛 CAMIONES
 router.get("/trucks", getAllTrucks);
 router.post("/trucks", createTruck);
 router.put("/trucks/:id", updateTruck);
 router.delete("/trucks/:id", deleteTruck);
 
-/* ========================= 👨‍🔧 CHOFERES ========================= */
+// 👨‍🔧 CHOFERES
 router.get("/drivers", getAllDrivers);
 router.post("/drivers", createDriver);
 router.put("/drivers/:id", updateDriver);
 router.delete("/drivers/:id", deleteDriver);
 
-/* ========================= 🎟️ TICKETS ========================= */
+// 🎟️ TICKETS
 router.get("/tickets", getAllTickets);
 router.post("/tickets", upload.single("photo"), createTicket);
 
-/* ========================= 🔄 ASIGNACIÓN DE CAMIONES ========================= */
-// POST /api/admin/assign-truck
+// 🚚 ASIGNACIONES
 router.post("/assign-truck", assignTruckToDriver);
+router.post("/unassign-truck", unassignTruckFromDriver);
+router.get("/truck-assignments", getTruckAssignments);
 
 export default router;
