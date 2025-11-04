@@ -2,14 +2,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 
-// 🔑 Clave secreta para el token (usa variable de entorno si existe)
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
-
-// ⏰ Tiempo de expiración del token
 const TOKEN_EXPIRATION = "7d";
 
 // ==================================================
-// 📌 LOGIN
+// 📌 LOGIN (solo administrador)
 // ==================================================
 export const login = async (req, res) => {
   try {
@@ -18,29 +15,25 @@ export const login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Email y contraseña requeridos" });
 
-    // Buscar usuario por email
     const user = await User.findOne({ email });
     if (!user)
       return res.status(404).json({ message: "Usuario no encontrado" });
 
-    // Validar contraseña
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(401).json({ message: "Contraseña incorrecta" });
 
-    // Generar token JWT
+    if (user.role !== "admin")
+      return res.status(403).json({ message: "Acceso denegado. Solo administradores" });
+
     const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: TOKEN_EXPIRATION }
     );
 
     res.json({
-      message: "Login exitoso",
+      message: "Inicio de sesión exitoso ✅",
       token,
       user: {
         id: user._id,
@@ -50,12 +43,12 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error en login:", error.message);
-    res.status(500).json({ message: "Error en el servidor", error: error.message });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 // ==================================================
-// 📌 OBTENER USUARIO ACTUAL
+// 📌 OBTENER PERFIL DEL USUARIO ACTUAL
 // ==================================================
 export const getMe = async (req, res) => {
   try {
@@ -70,12 +63,12 @@ export const getMe = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error en getMe:", error.message);
-    res.status(500).json({ message: "Error en el servidor" });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 // ==================================================
-// 📌 REGISTRAR ADMINISTRADOR (solo una vez)
+// 📌 REGISTRAR ADMINISTRADOR (una sola vez)
 // ==================================================
 export const registerAdmin = async (req, res) => {
   try {
@@ -88,7 +81,6 @@ export const registerAdmin = async (req, res) => {
     if (exists)
       return res.status(400).json({ message: "El correo ya está registrado" });
 
-    // Encriptar contraseña
     const hashed = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -98,9 +90,19 @@ export const registerAdmin = async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: "Administrador registrado correctamente" });
+    res.status(201).json({ message: "Administrador registrado correctamente ✅" });
   } catch (error) {
     console.error("❌ Error al registrar admin:", error.message);
     res.status(500).json({ message: "Error en el servidor" });
   }
+};
+
+// ==================================================
+// 📌 TEST ROUTE
+// ==================================================
+export const testConnection = (req, res) => {
+  res.json({
+    message: "✅ API de autenticación activa y funcional",
+    serverTime: new Date().toLocaleString(),
+  });
 };
