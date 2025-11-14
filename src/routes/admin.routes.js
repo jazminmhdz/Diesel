@@ -42,4 +42,5 @@ router.post("/assign-truck", assignTruckToDriver);
 router.post("/unassign-truck", unassignTruckFromDriver);
 router.get("/truck-assignments", getTruckAssignments);
 
+// ⚠️ EXPORTA CORRECTAMENTE EL ROUTER
 export default router;
