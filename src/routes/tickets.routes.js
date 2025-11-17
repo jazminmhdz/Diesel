@@ -1,29 +1,37 @@
 // src/routes/ticket.routes.js
 import { Router } from "express";
+import multer from "multer";
+
 import {
   createTicket,
   getTickets,
   getTicketById,
   updateTicket,
-  deleteTicket
+  deleteTicket,
 } from "../controllers/ticket.controller.js";
 
+import { authMiddleware } from "../middleware/auth.js";
+import { roleMiddleware } from "../middleware/roles.js";
 
 const router = Router();
+const upload = multer({ dest: "uploads/" });
 
-// Crear ticket
-router.post("/", createTicket);
+// Rutas públicas/administrativas según tu diseño:
+// - Si quieres que solo admin cree/gestione tickets, protege con authMiddleware + roleMiddleware("admin")
+// - Si quieres permitir que drivers suban tickets, protege con roleMiddleware("driver") para ese endpoint.
+// Aquí dejo la versión que protege creación/edición/eliminación para admin.
+// Si en tu app el admin es quien registra tickets, está OK.
 
-// Obtener todos los tickets
-router.get("/", getTickets);
+router.get("/", authMiddleware, getTickets);
+router.get("/:id", authMiddleware, getTicketById);
 
-// Obtener un ticket por ID
-router.get("/:id", getTicketById);
+// Crear ticket (admin) con foto opcional
+router.post("/", authMiddleware, roleMiddleware("admin"), upload.single("photo"), createTicket);
 
-// Actualizar un ticket
-router.put("/:id", updateTicket);
+// Actualizar ticket (admin)
+router.put("/:id", authMiddleware, roleMiddleware("admin"), updateTicket);
 
-// Eliminar un ticket
-router.delete("/:id", deleteTicket);
+// Eliminar ticket (admin)
+router.delete("/:id", authMiddleware, roleMiddleware("admin"), deleteTicket);
 
 export default router;
