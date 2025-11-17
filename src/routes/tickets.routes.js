@@ -1,33 +1,29 @@
-import express from "express";
-import multer from "multer";
-import { authMiddleware } from "../middleware/auth.js";
-import Ticket from "../models/Ticket.js";
+// src/routes/ticket.routes.js
+import { Router } from "express";
+import {
+  createTicket,
+  getTickets,
+  getTicketById,
+  updateTicket,
+  deleteTicket
+} from "../controllers/ticket.controller.js";
 
-const router = express.Router();
 
-// Configuración multer (subida local)
-const upload = multer({ dest: "uploads/" });
+const router = Router();
 
-// POST /api/tickets
-router.post("/", authMiddleware, upload.single("photo"), async (req, res) => {
-  if (req.user.role !== "driver") {
-    return res.status(403).json({ message: "Solo drivers" });
-  }
+// Crear ticket
+router.post("/", createTicket);
 
-  const { date, state, gallons, miles, pricePerGallon } = req.body;
+// Obtener todos los tickets
+router.get("/", getTickets);
 
-  const ticket = new Ticket({
-    driver: req.user.id,
-    photo: req.file.path,
-    date,
-    state,
-    gallons,
-    miles,
-    pricePerGallon,
-  });
+// Obtener un ticket por ID
+router.get("/:id", getTicketById);
 
-  await ticket.save();
-  res.json(ticket);
-});
+// Actualizar un ticket
+router.put("/:id", updateTicket);
+
+// Eliminar un ticket
+router.delete("/:id", deleteTicket);
 
 export default router;

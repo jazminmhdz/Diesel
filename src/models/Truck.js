@@ -2,24 +2,29 @@ import mongoose from "mongoose";
 
 const truckSchema = new mongoose.Schema(
   {
-    economicNumber: {
+    numeroSerie: {
+      type: String,
+      required: [true, "El número de serie es obligatorio"],
+      unique: true,
+    },
+    economico: {
       type: String,
       required: [true, "El número económico es obligatorio"],
       unique: true,
     },
-    vin: {
+    marca: {
       type: String,
-      required: [true, "El número de serie es obligatorio"],
+      required: [true, "La marca es obligatoria"],
     },
-    model: {
+    modelo: {
       type: String,
       required: [true, "El modelo es obligatorio"],
     },
-    year: {
+    anio: {
       type: Number,
       required: [true, "El año es obligatorio"],
     },
-    assignedDriver: {
+    assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
       default: null,

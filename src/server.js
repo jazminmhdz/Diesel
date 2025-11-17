@@ -1,11 +1,23 @@
 // src/server.js
-import "dotenv/config"; // Cargar variables de entorno
+import "dotenv/config";
 import app from "./app.js";
 import connect from "./db.js";
 import User from "./models/User.js";
 import bcrypt from "bcryptjs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const PORT = process.env.PORT || 4000;
+
+// Necesario para __dirname en ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Servir archivos subidos (MUY IMPORTANTE para fotos de tickets)
+app.use("/uploads", (req, res, next) => {
+  const express = require("express");
+  express.static(path.join(__dirname, "..", "uploads"))(req, res, next);
+});
 
 // 🧩 Crear admin si no existe
 async function ensureAdminExists() {
@@ -21,14 +33,18 @@ async function ensureAdminExists() {
   }
 }
 
-// 🚀 Conectar a MongoDB y levantar el servidor
+// 🚀 Conectar a MongoDB y levantar servidor
 connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log("✅ MongoDB conectado");
+    console.log("✅ MongoDB conectado correctamente");
     await ensureAdminExists();
-    app.listen(PORT, () => console.log(`🚀 API escuchando en :${PORT}`));
+
+    app.listen(PORT, () =>
+      console.log(`🚀 Servidor API en ejecución http://localhost:${PORT}`)
+    );
   })
   .catch((err) => {
-    console.error("❌ Fallo al conectar MongoDB:", err);
+    console.error("❌ Error al conectar MongoDB:", err.message);
     process.exit(1);
   });
+
