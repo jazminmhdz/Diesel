@@ -1,42 +1,34 @@
-// src/routes/admin.routes.js
 import express from "express";
 import {
   getAllTrucks,
   createTruck,
   updateTruck,
   deleteTruck,
+} from "../controllers/truck.controller.js"; // ahora apuntan aquí
 
+import {
   getAllTickets,
   createTicket,
-  assignTruckToTicket, // 🔥 NUEVO
-
-} from "../controllers/admin.controller.js";
+  assignTruckToTicket,
+} from "../controllers/admin.controller.js"; // si mantienes admin.controller para tickets
 
 import { authMiddleware } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
 
 const router = express.Router();
-
-// 🔐 Todas las rutas requieren admin
 router.use(authMiddleware);
 
-//
-// 🚛 CAMIONES
-//
+// Trucks
 router.get("/trucks", getAllTrucks);
 router.post("/trucks", createTruck);
 router.put("/trucks/:id", updateTruck);
 router.delete("/trucks/:id", deleteTruck);
 
-//
-// 🎟️ TICKETS
-//
+// Tickets (ejemplo)
 router.get("/tickets", getAllTickets);
 router.post("/tickets", upload.single("photo"), createTicket);
 
-//
-// 🔗 ASIGNAR CAMIÓN A TICKET (NUEVO)
-//
+// Asignar camión a ticket
 router.put("/assign-truck-ticket", assignTruckToTicket);
 
 export default router;

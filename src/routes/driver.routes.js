@@ -1,122 +1,89 @@
+// src/routes/driver.routes.js
 import express from "express";
+import multer from "multer";
 import mongoose from "mongoose";
+
 import { authMiddleware } from "../middleware/auth.js";
 import { roleMiddleware } from "../middleware/roles.js";
 
 import Driver from "../models/Driver.js";
 import Ticket from "../models/Ticket.js";
+import Alert from "../models/Alert.js";
+import Truck from "../models/Truck.js";
+
+import {
+  getDriverProfile,
+  getMyTruck,
+  getMyTickets,
+} from "../controllers/driver.controller.js";
 
 const router = express.Router();
+const upload = multer({ dest: "uploads/" });
 
-/* -------------------------------------------------------------------------- */
-/*                           1. OBTENER TODOS LOS CHOFERES                   */
-/* -------------------------------------------------------------------------- */
-router.get("/", authMiddleware, roleMiddleware("admin"), async (req, res) => {
-  try {
-    const drivers = await Driver.find().sort({ createdAt: -1 });
-    res.json(drivers);
-  } catch (err) {
-    console.error("❌ Error GET /drivers:", err);
-    res.status(500).json({ message: "Error al obtener choferes" });
-  }
-});
+// RUTAS para la **app del CHOFER**
+// Requieren token y role = 'driver'
+router.use(authMiddleware);
+router.use(roleMiddleware("driver"));
 
-/* -------------------------------------------------------------------------- */
-/*                        2. OBTENER CHOFER POR ID                            */
-/* -------------------------------------------------------------------------- */
-router.get("/:id", authMiddleware, roleMiddleware("admin"), async (req, res) => {
+// GET /driver/me -> perfil del chofer
+router.get("/me", getDriverProfile);
+
+// GET /driver/my-truck -> camión asignado
+router.get("/my-truck", getMyTruck);
+
+// GET /driver/my-tickets -> historial de tickets del chofer
+router.get("/my-tickets", getMyTickets);
+
+// GET /driver/my-alerts -> alertas del camión asignado
+router.get("/my-alerts", async (req, res) => {
   try {
-    const driverId = new mongoose.Types.ObjectId(req.params.id);
+    const driverId = req.user?.driverRef;
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
+
     const driver = await Driver.findById(driverId);
+    if (!driver || !driver.truckAssigned) return res.status(404).json({ message: "No tienes camión asignado" });
 
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    res.json(driver);
+    const alerts = await Alert.find({ truck: driver.truckAssigned }).sort({ createdAt: -1 });
+    res.json(alerts);
   } catch (err) {
-    console.error("❌ Error GET /drivers/:id:", err);
-    res.status(500).json({ message: "Error al obtener el chofer" });
+    console.error("Error /driver/my-alerts:", err);
+    res.status(500).json({ message: "Error al obtener alertas" });
   }
 });
 
-/* -------------------------------------------------------------------------- */
-/*                           3. CREAR CHOFER                                   */
-/* -------------------------------------------------------------------------- */
-router.post("/", authMiddleware, roleMiddleware("admin"), async (req, res) => {
+// POST /driver/tickets -> subir ticket desde la app del chofer (foto opcional)
+router.post("/tickets", upload.single("photo"), async (req, res) => {
   try {
-    const { name, phone, licenseNumber } = req.body;
+    const driverId = req.user?.driverRef;
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
 
-    const newDriver = await Driver.create({
-      name,
-      phone,
-      licenseNumber,
-    });
+    const { date, state, gallons, miles, pricePerGallon, truckId } = req.body;
 
-    res.status(201).json(newDriver);
-  } catch (err) {
-    console.error("❌ Error POST /drivers:", err);
-    res.status(500).json({ message: "Error al crear chofer" });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                           4. ACTUALIZAR CHOFER                             */
-/* -------------------------------------------------------------------------- */
-router.put("/:id", authMiddleware, roleMiddleware("admin"), async (req, res) => {
-  try {
-    const driverId = new mongoose.Types.ObjectId(req.params.id);
-
-    const updated = await Driver.findByIdAndUpdate(driverId, req.body, {
-      new: true,
-    });
-
-    if (!updated) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    res.json(updated);
-  } catch (err) {
-    console.error("❌ Error PUT /drivers/:id:", err);
-    res.status(500).json({ message: "Error al actualizar chofer" });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                           5. ELIMINAR CHOFER                               */
-/* -------------------------------------------------------------------------- */
-router.delete("/:id", authMiddleware, roleMiddleware("admin"), async (req, res) => {
-  try {
-    const driverId = new mongoose.Types.ObjectId(req.params.id);
-
-    const deleted = await Driver.findByIdAndDelete(driverId);
-
-    if (!deleted) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    res.json({ message: "Chofer eliminado correctamente" });
-  } catch (err) {
-    console.error("❌ Error DELETE /drivers/:id:", err);
-    res.status(500).json({ message: "Error al eliminar chofer" });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                  6. OBTENER LOS TICKETS DE UN CHOFER                       */
-/* -------------------------------------------------------------------------- */
-router.get(
-  "/:id/tickets",
-  authMiddleware,
-  roleMiddleware("admin"),
-  async (req, res) => {
-    try {
-      const driverId = new mongoose.Types.ObjectId(req.params.id);
-
-      const tickets = await Ticket.find({ driver: driverId })
-        .sort({ date: -1 })
-        .populate("truck", "economicNumber model year");
-
-      res.json(tickets);
-    } catch (err) {
-      console.error("❌ Error GET /drivers/:id/tickets:", err);
-      res.status(500).json({ message: "Error al obtener tickets del chofer" });
+    // validar campos mínimos
+    if (!truckId || !gallons || !miles || !state) {
+      return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
+
+    // verificar truck existe
+    const truck = await Truck.findById(truckId);
+    if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
+
+    const ticket = await Ticket.create({
+      driver: new mongoose.Types.ObjectId(driverId),
+      truck: new mongoose.Types.ObjectId(truckId),
+      photoUrl: req.file ? `/uploads/${req.file.filename}` : null,
+      date: date ? new Date(date) : new Date(),
+      state,
+      gallons: Number(gallons),
+      miles: Number(miles),
+      pricePerGallon: pricePerGallon ? Number(pricePerGallon) : 0,
+    });
+
+    res.status(201).json(ticket);
+  } catch (err) {
+    console.error("Error POST /driver/tickets:", err);
+    res.status(500).json({ message: "Error al subir ticket", error: err.message });
   }
-);
+});
 
 export default router;

@@ -1,160 +1,194 @@
 // src/controllers/driver.controller.js
 import Driver from "../models/Driver.js";
-import Ticket from "../models/Ticket.js";
 import Truck from "../models/Truck.js";
+import Ticket from "../models/Ticket.js";
 
 /**
- * Admin: obtener todos los choferes (con camión asignado)
+ * Controlador con funciones reutilizables:
+ * - funciones admin (CRUD)
+ * - funciones "driver" (perfil / my-truck / my-tickets)
+ *
+ * Nota: las rutas admin siguen usando admin.controller.js
+ * y pueden llamar a estas funciones si quieres reutilizar.
  */
+
+// ---------------------------
+// ADMIN: CRUD (puedes usar desde admin.controller)
+// ---------------------------
 export const getAllDrivers = async (req, res) => {
   try {
     const drivers = await Driver.find().populate("truckAssigned");
     res.json(drivers);
   } catch (err) {
-    console.error("Error getAllDrivers:", err);
+    console.error("Error obteniendo choferes:", err);
     res.status(500).json({ message: "Error obteniendo choferes" });
   }
 };
 
-/**
- * Admin: crear chofer
- * Acepta tanto { fullName, licenseNumber, badgeNumber, tipo } como { nombre, numLicencia, numGafete, tipo }
- */
 export const createDriver = async (req, res) => {
   try {
-    const body = req.body || {};
-    const nombre = body.nombre || body.fullName || body.name;
-    const numLicencia = body.numLicencia || body.licenseNumber;
-    const numGafete = body.numGafete || body.badgeNumber || null;
-    const tipo = body.tipo || body.driverType || "LOCAL"; // default
-
-    if (!nombre || !numLicencia) {
-      return res.status(400).json({ message: "Nombre y número de licencia son obligatorios" });
-    }
-
-    // duplicados (licencia única)
-    const exists = await Driver.findOne({ numLicencia });
-    if (exists) return res.status(409).json({ message: "La licencia ya está registrada" });
-
-    const driver = await Driver.create({
+    // Soportar campos en español/inglés por compatibilidad
+    const {
       nombre,
       numLicencia,
       numGafete,
+      fullName,
+      licenseNumber,
+      badgeNumber,
       tipo,
+      truckAssigned,
+    } = req.body;
+
+    const name = nombre || fullName;
+    const license = numLicencia || licenseNumber;
+    const badge = numGafete || badgeNumber || null;
+
+    if (!name || !license || !tipo) {
+      return res.status(400).json({ message: "nombre, numLicencia y tipo son obligatorios" });
+    }
+
+    // Validar duplicado de licencia
+    const exists = await Driver.findOne({ numLicencia: license });
+    if (exists) {
+      return res.status(409).json({ message: "La licencia ya está registrada" });
+    }
+
+    const driver = await Driver.create({
+      nombre: name,
+      numLicencia: license,
+      numGafete: badge,
+      tipo,
+      truckAssigned: truckAssigned || null,
     });
+
+    // Si se asignó truckAssigned, marcar en Truck.assignedTo si aplica
+    if (truckAssigned) {
+      await Truck.findByIdAndUpdate(truckAssigned, { driver: driver._id }).catch(() => {});
+    }
 
     res.status(201).json(driver);
   } catch (err) {
-    console.error("Error createDriver:", err);
+    console.error("Error creando chofer:", err);
     res.status(500).json({ message: "Error creando chofer" });
   }
 };
 
-/**
- * Admin: actualizar chofer
- * Mapea campos entrantes a los del modelo
- */
 export const updateDriver = async (req, res) => {
   try {
     const { id } = req.params;
-    const body = req.body || {};
+    const {
+      nombre,
+      fullName,
+      numLicencia,
+      licenseNumber,
+      numGafete,
+      badgeNumber,
+      tipo,
+      truckAssigned,
+    } = req.body;
+
     const update = {};
+    if (nombre || fullName) update.nombre = nombre || fullName;
+    if (numLicencia || licenseNumber) update.numLicencia = numLicencia || licenseNumber;
+    if (numGafete || badgeNumber) update.numGafete = numGafete || badgeNumber;
+    if (tipo) update.tipo = tipo;
+    if (truckAssigned !== undefined) update.truckAssigned = truckAssigned || null;
 
-    if (body.fullName || body.name || body.nombre) update.nombre = body.fullName || body.name || body.nombre;
-    if (body.licenseNumber || body.numLicencia) update.numLicencia = body.licenseNumber || body.numLicencia;
-    if (body.badgeNumber || body.numGafete) update.numGafete = body.badgeNumber || body.numGafete;
-    if (body.tipo || body.driverType) update.tipo = body.tipo || body.driverType;
-    if (body.truckAssigned) update.truckAssigned = body.truckAssigned;
-
-    // validar duplicado de licencia (excepto el mismo)
+    // Validar duplicado licencia (excepto mismo)
     if (update.numLicencia) {
-      const exists = await Driver.findOne({ numLicencia: update.numLicencia, _id: { $ne: id } });
-      if (exists) return res.status(409).json({ message: "Ya existe otro chofer con esta licencia" });
+      const exists = await Driver.findOne({
+        numLicencia: update.numLicencia,
+        _id: { $ne: id },
+      });
+      if (exists) return res.status(409).json({ message: "Otra cuenta tiene esa licencia" });
     }
 
-    const updated = await Driver.findByIdAndUpdate(id, update, { new: true }).populate("truckAssigned");
-    if (!updated) return res.status(404).json({ message: "Chofer no encontrado" });
+    const driver = await Driver.findByIdAndUpdate(id, update, { new: true }).populate(
+      "truckAssigned"
+    );
 
-    res.json(updated);
+    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
+
+    // Si se asignó/quitó truckAssigned, sincronizar Truck.driver (opcional)
+    try {
+      if (truckAssigned) {
+        await Truck.findByIdAndUpdate(truckAssigned, { driver: driver._id });
+      }
+    } catch (e) {
+      // no bloqueamos la respuesta por fallo en sincronizar el truck
+      console.warn("No se pudo sincronizar Truck.driver:", e.message);
+    }
+
+    res.json(driver);
   } catch (err) {
-    console.error("Error updateDriver:", err);
+    console.error("Error actualizando chofer:", err);
     res.status(500).json({ message: "Error actualizando chofer" });
   }
 };
 
-/**
- * Admin: eliminar chofer
- */
 export const deleteDriver = async (req, res) => {
   try {
-    const { id } = req.params;
+    const deleted = await Driver.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Chofer no encontrado" });
 
-    // opcional: desasignar camión si existe
-    const driver = await Driver.findById(id);
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    // si tiene truckAssigned, limpiar assignedTo en Truck
-    if (driver.truckAssigned) {
-      await Truck.findByIdAndUpdate(driver.truckAssigned, { assignedTo: null });
+    // limpiar referencia en camión si existía
+    if (deleted.truckAssigned) {
+      await Truck.findByIdAndUpdate(deleted.truckAssigned, { driver: null }).catch(() => {});
     }
 
-    await Driver.findByIdAndDelete(id);
-    res.json({ message: "Chofer eliminado" });
+    res.json({ message: "Chofer eliminado correctamente" });
   } catch (err) {
-    console.error("Error deleteDriver:", err);
+    console.error("Error eliminando chofer:", err);
     res.status(500).json({ message: "Error eliminando chofer" });
   }
 };
 
-/* ---------------- Driver (endpoints pensados para rol driver) ---------------- */
+// ---------------------------
+// DRIVER (endpoints para la app del chofer)
+// ---------------------------
 
-/**
- * Driver: obtener su perfil (usa req.user.driverRef)
- */
+// Obtener perfil del chofer (usa req.user.driverRef)
 export const getDriverProfile = async (req, res) => {
   try {
-    const driverRef = req.user?.driverRef || req.user?.driverId;
-    if (!driverRef) return res.status(400).json({ message: "DriverRef faltante en token" });
+    const driverId = req.user?.driverRef;
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
 
-    const driver = await Driver.findById(driverRef).populate("truckAssigned");
+    const driver = await Driver.findById(driverId).populate("truckAssigned");
     if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
+
     res.json(driver);
   } catch (err) {
     console.error("Error getDriverProfile:", err);
-    res.status(500).json({ message: "Error obteniendo perfil" });
+    res.status(500).json({ message: "Error al obtener perfil" });
   }
 };
 
-/**
- * Driver: obtener camión asignado
- */
-export const getDriverAssignedTruck = async (req, res) => {
+export const getMyTruck = async (req, res) => {
   try {
-    const driverRef = req.user?.driverRef || req.user?.driverId;
-    if (!driverRef) return res.status(400).json({ message: "DriverRef faltante en token" });
+    const driverId = req.user?.driverRef;
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
 
-    const driver = await Driver.findById(driverRef).populate("truckAssigned");
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
+    const driver = await Driver.findById(driverId).populate("truckAssigned");
+    if (!driver || !driver.truckAssigned) {
+      return res.status(404).json({ message: "No tienes camión asignado" });
+    }
 
-    res.json(driver.truckAssigned || null);
+    res.json(driver.truckAssigned);
   } catch (err) {
-    console.error("Error getDriverAssignedTruck:", err);
-    res.status(500).json({ message: "Error obteniendo camión asignado" });
+    console.error("Error getMyTruck:", err);
+    res.status(500).json({ message: "Error al obtener camión asignado" });
   }
 };
 
-/**
- * Driver: historial de tickets propios
- */
-export const getDriverTickets = async (req, res) => {
+export const getMyTickets = async (req, res) => {
   try {
-    const driverRef = req.user?.driverRef || req.user?.driverId;
-    if (!driverRef) return res.status(400).json({ message: "DriverRef faltante en token" });
+    const driverId = req.user?.driverRef;
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
 
-    const tickets = await Ticket.find({ driver: driverRef }).sort({ date: -1 }).populate("truck");
+    const tickets = await Ticket.find({ driver: driverId }).sort({ date: -1 }).populate("truck");
     res.json(tickets);
   } catch (err) {
-    console.error("Error getDriverTickets:", err);
-    res.status(500).json({ message: "Error obteniendo tickets del chofer" });
+    console.error("Error getMyTickets:", err);
+    res.status(500).json({ message: "Error al obtener tickets" });
   }
 };

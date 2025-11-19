@@ -1,42 +1,42 @@
 // src/controllers/truck.controller.js
 import Truck from "../models/Truck.js";
 
-// Obtener todos los camiones
-export const getTrucks = async (req, res) => {
+/** Obtener todos los camiones */
+export const getAllTrucks = async (req, res) => {
   try {
-    const trucks = await Truck.find();
+    const trucks = await Truck.find().populate("driverAssigned", "nombre numLicencia");
     res.json(trucks);
   } catch (err) {
-    console.error("Error getTrucks:", err);
+    console.error("Error getAllTrucks:", err);
     res.status(500).json({ message: "Error obteniendo camiones" });
   }
 };
 
-// Crear camión
+/** Crear camión */
 export const createTruck = async (req, res) => {
   try {
-    const { numeroSerie, economico, marca, modelo, anio, platesMx, platesUsa } = req.body;
+    const { economico, vin, marca, anio, platesMx, platesUsa, imageUrl } = req.body;
 
-    if (!numeroSerie || !economico || !marca || !modelo || !anio) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    if (!economico || !vin || !marca || !anio) {
+      return res.status(400).json({ message: "economico, vin, marca y anio son obligatorios" });
     }
 
-    // Validar duplicados
-    if (await Truck.findOne({ numeroSerie })) {
-      return res.status(409).json({ message: "El número de serie ya está registrado" });
-    }
+    // validaciones únicas
     if (await Truck.findOne({ economico })) {
       return res.status(409).json({ message: "El número económico ya está registrado" });
     }
+    if (await Truck.findOne({ vin })) {
+      return res.status(409).json({ message: "El VIN ya está registrado" });
+    }
 
     const truck = await Truck.create({
-      numeroSerie,
       economico,
+      vin,
       marca,
-      modelo,
-      anio,
+      anio: Number(anio),
       platesMx: platesMx || "",
       platesUsa: platesUsa || "",
+      imageUrl: imageUrl || null,
     });
 
     res.status(201).json(truck);
@@ -46,21 +46,23 @@ export const createTruck = async (req, res) => {
   }
 };
 
-// Actualizar camión
+/** Actualizar camión */
 export const updateTruck = async (req, res) => {
   try {
     const { id } = req.params;
-    const update = req.body;
+    const update = { ...req.body };
 
-    // Validar duplicados excepto el mismo
-    if (update.numeroSerie) {
-      const exists = await Truck.findOne({ numeroSerie: update.numeroSerie, _id: { $ne: id } });
-      if (exists) return res.status(409).json({ message: "Otro camión ya tiene ese número de serie" });
-    }
+    // validar únicos (excepto el mismo documento)
     if (update.economico) {
       const exists = await Truck.findOne({ economico: update.economico, _id: { $ne: id } });
       if (exists) return res.status(409).json({ message: "Otro camión ya tiene ese número económico" });
     }
+    if (update.vin) {
+      const exists = await Truck.findOne({ vin: update.vin, _id: { $ne: id } });
+      if (exists) return res.status(409).json({ message: "Otro camión ya tiene ese VIN" });
+    }
+
+    if (update.anio) update.anio = Number(update.anio);
 
     const truck = await Truck.findByIdAndUpdate(id, update, { new: true });
     if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
@@ -72,7 +74,7 @@ export const updateTruck = async (req, res) => {
   }
 };
 
-// Eliminar camión
+/** Eliminar camión */
 export const deleteTruck = async (req, res) => {
   try {
     const deleted = await Truck.findByIdAndDelete(req.params.id);

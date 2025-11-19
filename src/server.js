@@ -13,11 +13,8 @@ const PORT = process.env.PORT || 4000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servir archivos subidos (MUY IMPORTANTE para fotos de tickets)
-app.use("/uploads", (req, res, next) => {
-  const express = require("express");
-  express.static(path.join(__dirname, "..", "uploads"))(req, res, next);
-});
+// ✅ Servir archivos subidos (fotos de tickets)
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // 🧩 Crear admin si no existe
 async function ensureAdminExists() {
@@ -40,11 +37,10 @@ connect(process.env.MONGO_URI)
     await ensureAdminExists();
 
     app.listen(PORT, () =>
-      console.log(`🚀 Servidor API en ejecución http://localhost:${PORT}`)
+      console.log(`🚀 Servidor API en ejecución en http://localhost:${PORT}`)
     );
   })
   .catch((err) => {
     console.error("❌ Error al conectar MongoDB:", err.message);
     process.exit(1);
   });
-

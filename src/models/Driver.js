@@ -2,32 +2,33 @@ import mongoose from "mongoose";
 
 const driverSchema = new mongoose.Schema(
   {
-    nombre: {
+    fullName: {
       type: String,
-      required: [true, "El nombre del conductor es obligatorio"],
+      required: [true, "El nombre del chofer es obligatorio"],
       trim: true,
     },
-    numLicencia: {
+
+    licenseNumber: {
       type: String,
       required: [true, "El número de licencia es obligatorio"],
       unique: true,
+      trim: true,
     },
 
-    // 🔥 Gafete OPCIONAL  
-    numGafete: {
+    // Opcional
+    gafeteNumber: {
       type: String,
-      required: false,        // <--- YA NO ES OBLIGATORIO
-      unique: false,          // <--- Opcional, así no marca error si se repite
       default: null,
+      trim: true,
     },
 
-    tipo: {
+    type: {
       type: String,
       enum: ["CRUCE", "LOCAL"],
-      required: [true, "El tipo del chofer es obligatorio"],
+      required: [true, "El tipo de chofer es obligatorio"],
     },
 
-    truckAssigned: {
+    assignedTruck: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Truck",
       default: null,
