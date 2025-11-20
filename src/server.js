@@ -1,5 +1,6 @@
 // src/server.js
 import "dotenv/config";
+import express from "express";
 import app from "./app.js";
 import connect from "./db.js";
 import User from "./models/User.js";
@@ -13,10 +14,10 @@ const PORT = process.env.PORT || 4000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Servir archivos subidos (fotos de tickets)
+// Servir archivos subidos (fotos de tickets)
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// 🧩 Crear admin si no existe
+// Crear admin si no existe
 async function ensureAdminExists() {
   const exists = await User.findOne({ email: "admin@diesel.local" });
   if (!exists) {
@@ -30,7 +31,7 @@ async function ensureAdminExists() {
   }
 }
 
-// 🚀 Conectar a MongoDB y levantar servidor
+// Conectar a MongoDB y levantar servidor
 connect(process.env.MONGO_URI)
   .then(async () => {
     console.log("✅ MongoDB conectado correctamente");

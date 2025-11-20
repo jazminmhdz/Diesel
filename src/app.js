@@ -5,7 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
 import driverRoutes from "./routes/driver.routes.js";
-import ticketRoutes from "./routes/ticket.routes.js"; // 👈 AGREGA ESTO
+import ticketRoutes from "./routes/tickets.routes.js"; // 👈 AGREGA ESTO
 
 const app = express();
 
