@@ -15,13 +15,24 @@ export const getAllTrucks = async (req, res) => {
 /** Crear camión */
 export const createTruck = async (req, res) => {
   try {
-    const { economico, vin, marca, anio, platesMx, platesUsa, imageUrl } = req.body;
+    const {
+      economico,
+      vin,
+      marca,
+      anio,
+      platesMx,
+      platesUsa,
+      imageUrl
+    } = req.body;
 
-    if (!economico || !vin || !marca || !anio) {
-      return res.status(400).json({ message: "economico, vin, marca y anio son obligatorios" });
+    // Validar campos obligatorios DEL MODELO
+    if (!economico || !vin || !marca || !anio || !platesMx) {
+      return res.status(400).json({
+        message: "economico, vin, marca, anio y platesMx son obligatorios"
+      });
     }
 
-    // validaciones únicas
+    // Validar unicidad
     if (await Truck.findOne({ economico })) {
       return res.status(409).json({ message: "El número económico ya está registrado" });
     }
@@ -34,9 +45,9 @@ export const createTruck = async (req, res) => {
       vin,
       marca,
       anio: Number(anio),
-      platesMx: platesMx || "",
-      platesUsa: platesUsa || "",
-      imageUrl: imageUrl || null,
+      platesMx,
+      platesUsa: platesUsa || null,
+      imageUrl: imageUrl || ""
     });
 
     res.status(201).json(truck);
@@ -52,14 +63,26 @@ export const updateTruck = async (req, res) => {
     const { id } = req.params;
     const update = { ...req.body };
 
-    // validar únicos (excepto el mismo documento)
+    // Validar unicidad para economico
     if (update.economico) {
-      const exists = await Truck.findOne({ economico: update.economico, _id: { $ne: id } });
-      if (exists) return res.status(409).json({ message: "Otro camión ya tiene ese número económico" });
+      const exists = await Truck.findOne({
+        economico: update.economico,
+        _id: { $ne: id }
+      });
+      if (exists) {
+        return res.status(409).json({ message: "Otro camión ya tiene ese número económico" });
+      }
     }
+
+    // Validar unicidad para VIN
     if (update.vin) {
-      const exists = await Truck.findOne({ vin: update.vin, _id: { $ne: id } });
-      if (exists) return res.status(409).json({ message: "Otro camión ya tiene ese VIN" });
+      const exists = await Truck.findOne({
+        vin: update.vin,
+        _id: { $ne: id }
+      });
+      if (exists) {
+        return res.status(409).json({ message: "Otro camión ya tiene ese VIN" });
+      }
     }
 
     if (update.anio) update.anio = Number(update.anio);
@@ -79,6 +102,7 @@ export const deleteTruck = async (req, res) => {
   try {
     const deleted = await Truck.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Camión no encontrado" });
+
     res.json({ message: "Camión eliminado" });
   } catch (err) {
     console.error("Error deleteTruck:", err);

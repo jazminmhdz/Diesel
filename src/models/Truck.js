@@ -3,42 +3,42 @@ import mongoose from "mongoose";
 
 const truckSchema = new mongoose.Schema(
   {
-    economicNumber: {       // Número económico
+    economico: {
       type: String,
       required: true,
       unique: true,
       trim: true,
     },
-    vin: {                  // VIN
+    vin: {
       type: String,
       required: true,
       unique: true,
       trim: true,
     },
-    brand: {                // Marca
+    marca: {
       type: String,
       required: true,
     },
-    year: {                 // Año
+    anio: {
       type: Number,
       required: true,
     },
-    platesMx: {             // Placas mexicanas
+    platesMx: {
       type: String,
       required: true,
       trim: true,
     },
-    platesUsa: {            // Placas USA (opcional)
+    platesUsa: {
       type: String,
       default: null,
       trim: true,
     },
-    driver: {               // Chofer asignado (opcional)
+    driverAssigned: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
       default: null,
     },
-    image: {                // FOTO opcional
+    imageUrl: {
       type: String,
       default: "",
     },

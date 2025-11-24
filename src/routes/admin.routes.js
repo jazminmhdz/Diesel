@@ -4,31 +4,39 @@ import {
   createTruck,
   updateTruck,
   deleteTruck,
-} from "../controllers/truck.controller.js"; // ahora apuntan aquí
+} from "../controllers/truck.controller.js";
 
 import {
   getAllTickets,
   createTicket,
   assignTruckToTicket,
-} from "../controllers/admin.controller.js"; // si mantienes admin.controller para tickets
+} from "../controllers/admin.controller.js";
 
 import { authMiddleware } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
 
 const router = express.Router();
+
+// 🔐 Todas las rutas requieren autenticación
 router.use(authMiddleware);
 
-// Trucks
-router.get("/trucks", getAllTrucks);
-router.post("/trucks", createTruck);
-router.put("/trucks/:id", updateTruck);
-router.delete("/trucks/:id", deleteTruck);
+// ===============================
+// 🚚 TRUCKS
+// ===============================
+router.get("/trucks", getAllTrucks);          // Obtener todos los camiones
+router.post("/trucks", createTruck);          // Crear camión
+router.put("/trucks/:id", updateTruck);       // Actualizar camión
+router.delete("/trucks/:id", deleteTruck);    // Eliminar camión
 
-// Tickets (ejemplo)
-router.get("/tickets", getAllTickets);
-router.post("/tickets", upload.single("photo"), createTicket);
+// ===============================
+// 🎫 TICKETS
+// ===============================
+router.get("/tickets", getAllTickets);        // Obtener tickets
+router.post("/tickets", upload.single("photo"), createTicket); // Crear ticket con foto
 
-// Asignar camión a ticket
+// ===============================
+// 🔗 Asignar camión a ticket
+// ===============================
 router.put("/assign-truck-ticket", assignTruckToTicket);
 
 export default router;

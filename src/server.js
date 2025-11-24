@@ -27,21 +27,21 @@ async function ensureAdminExists() {
       password: hashed,
       role: "admin",
     });
-    console.log("✅ Admin creado automáticamente: admin@diesel.local / admin123");
+    console.log("Admin creado automáticamente: admin@diesel.local / admin123");
   }
 }
 
 // Conectar a MongoDB y levantar servidor
 connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log("✅ MongoDB conectado correctamente");
+    console.log(" MongoDB conectado correctamente");
     await ensureAdminExists();
 
     app.listen(PORT, () =>
-      console.log(`🚀 Servidor API en ejecución en http://localhost:${PORT}`)
+      console.log(`Servidor API en ejecución en http://localhost:${PORT}`)
     );
   })
   .catch((err) => {
-    console.error("❌ Error al conectar MongoDB:", err.message);
+    console.error(" Error al conectar MongoDB:", err.message);
     process.exit(1);
   });
