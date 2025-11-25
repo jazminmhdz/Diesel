@@ -10,11 +10,11 @@ import { fileURLToPath } from "url";
 
 const PORT = process.env.PORT || 4000;
 
-// Necesario para __dirname en ES Modules
+// Para usar __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servir archivos subidos (fotos de tickets)
+// Servir archivos subidos (por ejemplo imágenes)
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Crear admin si no existe
@@ -27,21 +27,22 @@ async function ensureAdminExists() {
       password: hashed,
       role: "admin",
     });
-    console.log("Admin creado automáticamente: admin@diesel.local / admin123");
+    console.log("🔐 Admin creado: admin@diesel.local / admin123");
   }
 }
 
-// Conectar a MongoDB y levantar servidor
+// Conectar DB + iniciar servidor
 connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log(" MongoDB conectado correctamente");
+    console.log("✅ MongoDB conectado correctamente");
+
     await ensureAdminExists();
 
     app.listen(PORT, () =>
-      console.log(`Servidor API en ejecución en http://localhost:${PORT}`)
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
     );
   })
   .catch((err) => {
-    console.error(" Error al conectar MongoDB:", err.message);
+    console.error("❌ Error al conectar con MongoDB:", err.message);
     process.exit(1);
   });
