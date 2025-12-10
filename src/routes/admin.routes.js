@@ -1,42 +1,35 @@
+// src/routes/admin.routes.js
 import express from "express";
-import {
-  getAllTrucks,
-  createTruck,
-  updateTruck,
-  deleteTruck,
-} from "../controllers/truck.controller.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { roleMiddleware } from "../middleware/roles.js";
+import upload from "../middleware/upload.js";
 
 import {
   getAllTickets,
   createTicket,
-  assignTruckToTicket,
+  assignTruckToTicket
 } from "../controllers/admin.controller.js";
 
-import { authMiddleware } from "../middleware/auth.js";
-import upload from "../middleware/upload.js";
+import trucksRouter from "./trucks.routes.js";
 
 const router = express.Router();
 
-// 🔐 Todas las rutas requieren autenticación
+// 🔐 Todas las rutas requieren login y rol admin
 router.use(authMiddleware);
+router.use(roleMiddleware("admin"));
 
 // ===============================
-// 🚚 TRUCKS
+// 🚚 Montar Trucks
 // ===============================
-router.get("/trucks", getAllTrucks);          // Obtener todos los camiones
-router.post("/trucks", createTruck);          // Crear camión
-router.put("/trucks/:id", updateTruck);       // Actualizar camión
-router.delete("/trucks/:id", deleteTruck);    // Eliminar camión
+router.use("/trucks", trucksRouter);
 
 // ===============================
-// 🎫 TICKETS
+// 🎫 Tickets
 // ===============================
-router.get("/tickets", getAllTickets);        // Obtener tickets
-router.post("/tickets", upload.single("photo"), createTicket); // Crear ticket con foto
+router.get("/tickets", getAllTickets);
+router.post("/tickets", upload.single("photo"), createTicket);
 
-// ===============================
 // 🔗 Asignar camión a ticket
-// ===============================
 router.put("/assign-truck-ticket", assignTruckToTicket);
 
 export default router;
