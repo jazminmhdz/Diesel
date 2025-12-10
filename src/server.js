@@ -1,3 +1,6 @@
+import driversAdminRoutes from "./routes/driversAdmin.routes.js";
+app.use("/api/admin/drivers", driversAdminRoutes);
+
 // src/server.js
 import "dotenv/config";
 import express from "express";
@@ -46,3 +49,6 @@ connect(process.env.MONGO_URI)
     console.error("❌ Error al conectar con MongoDB:", err.message);
     process.exit(1);
   });
+
+  import driversAdminRoutes from "./routes/driversAdmin.routes.js";
+app.use("/api/admin/drivers", driversAdminRoutes);
