@@ -1,6 +1,3 @@
-import driversAdminRoutes from "./routes/driversAdmin.routes.js";
-app.use("/api/admin/drivers", driversAdminRoutes);
-
 // src/server.js
 import "dotenv/config";
 import express from "express";
@@ -11,14 +8,20 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// IMPORTA SOLO UNA VEZ AQUI
+import driversAdminRoutes from "./routes/driversAdmin.routes.js";
+
 const PORT = process.env.PORT || 4000;
 
 // Para usar __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servir archivos subidos (por ejemplo imágenes)
+// Servir archivos subidos
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+
+// RUTA ADMIN DE CHOFERES (AQUI MISMO)
+app.use("/api/admin/drivers", driversAdminRoutes);
 
 // Crear admin si no existe
 async function ensureAdminExists() {
@@ -49,6 +52,3 @@ connect(process.env.MONGO_URI)
     console.error("❌ Error al conectar con MongoDB:", err.message);
     process.exit(1);
   });
-
-  import driversAdminRoutes from "./routes/driversAdmin.routes.js";
-app.use("/api/admin/drivers", driversAdminRoutes);
