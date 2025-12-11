@@ -1,11 +1,14 @@
 // controllers/driver.controller.js
 import Driver from "../models/Driver.js";
 import Truck from "../models/Truck.js";
-import Ticket from "../models/Ticket.js";
 
-// ---------------------------
-// ADMIN CRUD
-// ---------------------------
+// ======================================================
+// ADMIN – CRUD COMPLETO (NO EXISTE APP DE CHOFER)
+// ======================================================
+
+// ----------------------------------------
+// GET ALL – Listar todos los choferes
+// ----------------------------------------
 export const getAllDrivers = async (req, res) => {
   try {
     const drivers = await Driver.find().populate("assignedTruck");
@@ -16,6 +19,28 @@ export const getAllDrivers = async (req, res) => {
   }
 };
 
+// ----------------------------------------
+// GET ONE – Buscar chofer por ID
+// ----------------------------------------
+export const getDriverById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const driver = await Driver.findById(id).populate("assignedTruck");
+    if (!driver) {
+      return res.status(404).json({ message: "Chofer no encontrado" });
+    }
+
+    res.json(driver);
+  } catch (err) {
+    console.error("Error buscando chofer:", err);
+    res.status(500).json({ message: "Error buscando chofer" });
+  }
+};
+
+// ----------------------------------------
+// CREATE – Crear chofer
+// ----------------------------------------
 export const createDriver = async (req, res) => {
   try {
     const { fullName, licenseNumber, gafeteNumber, type, assignedTruck } = req.body;
@@ -48,6 +73,9 @@ export const createDriver = async (req, res) => {
   }
 };
 
+// ----------------------------------------
+// UPDATE – Actualizar chofer
+// ----------------------------------------
 export const updateDriver = async (req, res) => {
   try {
     const { id } = req.params;
@@ -60,6 +88,7 @@ export const updateDriver = async (req, res) => {
     if (type) update.type = type;
     if (assignedTruck !== undefined) update.assignedTruck = assignedTruck;
 
+    // Validar licencia única
     if (licenseNumber) {
       const exists = await Driver.findOne({
         licenseNumber,
@@ -83,6 +112,9 @@ export const updateDriver = async (req, res) => {
   }
 };
 
+// ----------------------------------------
+// DELETE – Eliminar chofer
+// ----------------------------------------
 export const deleteDriver = async (req, res) => {
   try {
     const deleted = await Driver.findByIdAndDelete(req.params.id);
@@ -96,56 +128,5 @@ export const deleteDriver = async (req, res) => {
   } catch (err) {
     console.error("Error eliminando chofer:", err);
     res.status(500).json({ message: "Error eliminando chofer" });
-  }
-};
-
-// ---------------------------
-// DRIVER (APP CHOFER)
-// ---------------------------
-export const getDriverProfile = async (req, res) => {
-  try {
-    const driverId = req.user?.driverRef;
-    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
-
-    const driver = await Driver.findById(driverId).populate("assignedTruck");
-    if (!driver) return res.status(404).json({ message: "Chofer no encontrado" });
-
-    res.json(driver);
-  } catch (err) {
-    console.error("Error getDriverProfile:", err);
-    res.status(500).json({ message: "Error al obtener perfil" });
-  }
-};
-
-export const getMyTruck = async (req, res) => {
-  try {
-    const driverId = req.user?.driverRef;
-    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
-
-    const driver = await Driver.findById(driverId).populate("assignedTruck");
-    if (!driver || !driver.assignedTruck) {
-      return res.status(404).json({ message: "No tienes camión asignado" });
-    }
-
-    res.json(driver.assignedTruck);
-  } catch (err) {
-    console.error("Error getMyTruck:", err);
-    res.status(500).json({ message: "Error al obtener camión asignado" });
-  }
-};
-
-export const getMyTickets = async (req, res) => {
-  try {
-    const driverId = req.user?.driverRef;
-    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer" });
-
-    const tickets = await Ticket.find({ driver: driverId })
-      .sort({ date: -1 })
-      .populate("truck");
-
-    res.json(tickets);
-  } catch (err) {
-    console.error("Error getMyTickets:", err);
-    res.status(500).json({ message: "Error al obtener tickets" });
   }
 };

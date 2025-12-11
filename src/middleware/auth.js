@@ -18,7 +18,6 @@ export const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
 
-    // 🔒 Solo administradores pueden usar la API
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Acceso denegado: solo administrador" });
     }
