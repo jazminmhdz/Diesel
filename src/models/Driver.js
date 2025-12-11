@@ -5,13 +5,13 @@ const driverSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      required: [true, "El nombre del chofer es obligatorio"],
+      required: true,
       trim: true,
     },
 
     licenseNumber: {
       type: String,
-      required: [true, "El número de licencia es obligatorio"],
+      required: true,
       unique: true,
       trim: true,
     },
@@ -25,7 +25,7 @@ const driverSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ["CRUCE", "LOCAL"],
-      required: [true, "El tipo de chofer es obligatorio"],
+      required: true,
     },
 
     assignedTruck: {

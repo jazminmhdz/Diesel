@@ -53,20 +53,18 @@ export const updateDriver = async (req, res) => {
     const { id } = req.params;
     const { fullName, licenseNumber, gafeteNumber, type, assignedTruck } = req.body;
 
-    const update = {
-      fullName,
-      licenseNumber,
-      gafeteNumber,
-      type,
-      assignedTruck,
-    };
+    const update = {};
+    if (fullName) update.fullName = fullName;
+    if (licenseNumber) update.licenseNumber = licenseNumber;
+    if (gafeteNumber) update.gafeteNumber = gafeteNumber;
+    if (type) update.type = type;
+    if (assignedTruck !== undefined) update.assignedTruck = assignedTruck;
 
     if (licenseNumber) {
       const exists = await Driver.findOne({
         licenseNumber,
         _id: { $ne: id },
       });
-
       if (exists) {
         return res.status(409).json({ message: "Otra cuenta tiene esa licencia" });
       }
@@ -102,7 +100,7 @@ export const deleteDriver = async (req, res) => {
 };
 
 // ---------------------------
-// DRIVER (app chofer)
+// DRIVER (APP CHOFER)
 // ---------------------------
 export const getDriverProfile = async (req, res) => {
   try {
