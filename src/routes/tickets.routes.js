@@ -1,6 +1,6 @@
 // src/routes/ticket.routes.js
 import { Router } from "express";
-import upload from "../middleware/upload.js"; 
+import upload from "../middleware/upload.js";
 import {
   createTicket,
   getTickets,
@@ -11,17 +11,17 @@ import {
 
 const router = Router();
 
-// Crear ticket (acepta foto opcional)
+// Crear ticket
 router.post("/", upload.single("photo"), createTicket);
 
-// Obtener todos
+// Obtener todos los tickets
 router.get("/", getTickets);
 
-// Obtener por ID
+// Obtener uno por ID
 router.get("/:id", getTicketById);
 
-// Actualizar ticket
-router.put("/:id", updateTicket);
+// Actualizar ticket (también acepta nueva foto)
+router.put("/:id", upload.single("photo"), updateTicket);
 
 // Eliminar ticket
 router.delete("/:id", deleteTicket);
