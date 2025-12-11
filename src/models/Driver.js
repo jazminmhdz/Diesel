@@ -1,3 +1,4 @@
+// models/Driver.js
 import mongoose from "mongoose";
 
 const driverSchema = new mongoose.Schema(
@@ -15,7 +16,6 @@ const driverSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Opcional
     gafeteNumber: {
       type: String,
       default: null,

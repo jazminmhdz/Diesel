@@ -20,30 +20,25 @@ import {
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-// RUTAS para la **app del CHOFER**
-// Requieren token y role = 'driver'
+// app chofer
 router.use(authMiddleware);
 router.use(roleMiddleware("driver"));
 
-// GET /driver/me -> perfil del chofer
 router.get("/me", getDriverProfile);
-
-// GET /driver/my-truck -> camión asignado
 router.get("/my-truck", getMyTruck);
-
-// GET /driver/my-tickets -> historial de tickets del chofer
 router.get("/my-tickets", getMyTickets);
 
-// GET /driver/my-alerts -> alertas del camión asignado
 router.get("/my-alerts", async (req, res) => {
   try {
     const driverId = req.user?.driverRef;
-    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer" });
 
     const driver = await Driver.findById(driverId);
-    if (!driver || !driver.truckAssigned) return res.status(404).json({ message: "No tienes camión asignado" });
+    if (!driver || !driver.assignedTruck)
+      return res.status(404).json({ message: "No tienes camión asignado" });
 
-    const alerts = await Alert.find({ truck: driver.truckAssigned }).sort({ createdAt: -1 });
+    const alerts = await Alert.find({ truck: driver.assignedTruck }).sort({ createdAt: -1 });
+
     res.json(alerts);
   } catch (err) {
     console.error("Error /driver/my-alerts:", err);
@@ -51,20 +46,17 @@ router.get("/my-alerts", async (req, res) => {
   }
 });
 
-// POST /driver/tickets -> subir ticket desde la app del chofer (foto opcional)
 router.post("/tickets", upload.single("photo"), async (req, res) => {
   try {
     const driverId = req.user?.driverRef;
-    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer en el usuario" });
+
+    if (!driverId) return res.status(400).json({ message: "No hay referencia de chofer" });
 
     const { date, state, gallons, miles, pricePerGallon, truckId } = req.body;
 
-    // validar campos mínimos
-    if (!truckId || !gallons || !miles || !state) {
+    if (!truckId || !gallons || !miles || !state)
       return res.status(400).json({ message: "Faltan campos obligatorios" });
-    }
 
-    // verificar truck existe
     const truck = await Truck.findById(truckId);
     if (!truck) return res.status(404).json({ message: "Camión no encontrado" });
 

@@ -8,22 +8,21 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// IMPORTA SOLO UNA VEZ AQUI
 import driversAdminRoutes from "./routes/driversAdmin.routes.js";
 
 const PORT = process.env.PORT || 4000;
 
-// Para usar __dirname en ES Modules
+// __dirname para ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servir archivos subidos
+// Archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// RUTA ADMIN DE CHOFERES (AQUI MISMO)
+// Registrar rutas admin drivers
 app.use("/api/admin/drivers", driversAdminRoutes);
 
-// Crear admin si no existe
+// Crear admin por defecto
 async function ensureAdminExists() {
   const exists = await User.findOne({ email: "admin@diesel.local" });
   if (!exists) {
@@ -37,7 +36,7 @@ async function ensureAdminExists() {
   }
 }
 
-// Conectar DB + iniciar servidor
+// Conexión + servidor
 connect(process.env.MONGO_URI)
   .then(async () => {
     console.log("✅ MongoDB conectado correctamente");

@@ -1,3 +1,4 @@
+// routes/driversAdmin.routes.js
 import express from "express";
 import Driver from "../models/Driver.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -11,7 +12,7 @@ router.use(roleMiddleware("admin"));
 // GET /drivers - lista choferes
 router.get("/", async (req, res) => {
   try {
-    const drivers = await Driver.find().populate("truckAssigned");
+    const drivers = await Driver.find().populate("assignedTruck");
     res.json(drivers);
   } catch (err) {
     console.error("GET /drivers error:", err);
