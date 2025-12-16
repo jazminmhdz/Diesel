@@ -1,6 +1,4 @@
-// routes/ticket.routes.js
 import { Router } from "express";
-import upload from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 import {
@@ -13,9 +11,10 @@ import {
 
 const router = Router();
 
-router.use(authMiddleware); // solo admin
+router.use(authMiddleware);
 
-router.post("/", upload.single("photo"), createTicket);
+// CRUD ADMIN
+router.post("/", createTicket);
 router.get("/", getTickets);
 router.get("/:id", getTicketById);
 router.put("/:id", updateTicket);
