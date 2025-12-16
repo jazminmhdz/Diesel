@@ -7,7 +7,7 @@ import {
   deleteTicket,
 } from "../controllers/ticket.controller.js";
 
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
