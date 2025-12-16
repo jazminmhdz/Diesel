@@ -1,10 +1,10 @@
-// controllers/ticket.controller.js
+// src/controllers/ticket.controller.js
 import Ticket from "../models/Ticket.js";
 import Truck from "../models/Truck.js";
 
-// ----------------------------------------
+// ============================
 // CREATE – Crear ticket (ADMIN)
-// ----------------------------------------
+// ============================
 export const createTicket = async (req, res) => {
   try {
     const {
@@ -16,17 +16,17 @@ export const createTicket = async (req, res) => {
       pricePerGallon,
     } = req.body;
 
-    // Validación
+    // Validaciones
     if (!truck || !date || !state || !gallons || !miles || !pricePerGallon) {
       return res.status(400).json({
-        message: "Todos los campos obligatorios deben enviarse",
+        message: "Todos los campos obligatorios deben llenarse",
       });
     }
 
-    // Verificar camión
-    const existsTruck = await Truck.findById(truck);
-    if (!existsTruck) {
-      return res.status(404).json({ message: "Camión no encontrado" });
+    // Validar camión
+    const truckExists = await Truck.findById(truck);
+    if (!truckExists) {
+      return res.status(404).json({ message: "El camión no existe" });
     }
 
     // Crear ticket
@@ -41,30 +41,29 @@ export const createTicket = async (req, res) => {
     });
 
     res.status(201).json(ticket);
+
   } catch (error) {
     console.error("❌ Error creando ticket:", error);
-    res.status(500).json({
-      message: "Error creando ticket",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Error creando ticket" });
   }
 };
 
-// ----------------------------------------
+// ============================
 // GET ALL – Listar tickets
-// ----------------------------------------
+// ============================
 export const getTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find().populate("truck");
     res.json(tickets);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error al obtener tickets" });
   }
 };
 
-// ----------------------------------------
+// ============================
 // GET ONE – Ticket por ID
-// ----------------------------------------
+// ============================
 export const getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id).populate("truck");
@@ -73,13 +72,14 @@ export const getTicketById = async (req, res) => {
     }
     res.json(ticket);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error al obtener ticket" });
   }
 };
 
-// ----------------------------------------
+// ============================
 // UPDATE – Actualizar ticket
-// ----------------------------------------
+// ============================
 export const updateTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndUpdate(
@@ -94,13 +94,14 @@ export const updateTicket = async (req, res) => {
 
     res.json(ticket);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error al actualizar ticket" });
   }
 };
 
-// ----------------------------------------
+// ============================
 // DELETE – Eliminar ticket
-// ----------------------------------------
+// ============================
 export const deleteTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndDelete(req.params.id);
@@ -110,6 +111,7 @@ export const deleteTicket = async (req, res) => {
 
     res.json({ message: "Ticket eliminado correctamente" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error al eliminar ticket" });
   }
 };

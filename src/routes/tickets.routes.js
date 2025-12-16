@@ -1,4 +1,4 @@
-// routes/ticket.routes.js
+// src/routes/ticket.routes.js
 import { Router } from "express";
 import upload from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -13,14 +13,22 @@ import {
 
 const router = Router();
 
-// 🔒 ADMIN
+// 🔒 Solo admin
 router.use(authMiddleware);
 
-// CRUD
+// Crear ticket
 router.post("/", upload.single("photo"), createTicket);
+
+// Listar
 router.get("/", getTickets);
+
+// Buscar por ID
 router.get("/:id", getTicketById);
+
+// Actualizar
 router.put("/:id", updateTicket);
+
+// Eliminar
 router.delete("/:id", deleteTicket);
 
 export default router;
