@@ -5,32 +5,37 @@ const ticketSchema = new mongoose.Schema(
     truck: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Truck",
-      required: true, // 🔥 Solo se relaciona con el camión
+      required: true,
     },
 
     miles: {
       type: Number,
-      required: [true, "Las millas son obligatorias"],
+      required: true,
     },
 
     gallons: {
       type: Number,
-      required: [true, "Los galones son obligatorios"],
+      required: true,
     },
 
     pricePerGallon: {
       type: Number,
-      required: [true, "El precio por galón es obligatorio"],
+      required: true,
+    },
+
+    mpg: {
+      type: Number,
+      required: true, // 🔥 CLAVE PARA RENDIMIENTOS
     },
 
     date: {
       type: Date,
-      required: [true, "La fecha es obligatoria"],
+      required: true,
     },
 
     state: {
       type: String,
-      required: [true, "El estado es obligatorio"],
+      required: true,
       trim: true,
     },
 

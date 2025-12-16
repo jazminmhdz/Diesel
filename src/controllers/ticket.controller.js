@@ -1,9 +1,9 @@
 import Ticket from "../models/Ticket.js";
 import Truck from "../models/Truck.js";
 
-// ===============================
+// =======================================
 // CREATE TICKET (ADMIN)
-// ===============================
+// =======================================
 export const createTicket = async (req, res) => {
   try {
     const {
@@ -29,6 +29,9 @@ export const createTicket = async (req, res) => {
       return res.status(404).json({ message: "El camión no existe" });
     }
 
+    // Calcular MPG 🔥
+    const mpg = Number(miles) / Number(gallons);
+
     const ticket = await Ticket.create({
       truck,
       date: new Date(date),
@@ -36,19 +39,24 @@ export const createTicket = async (req, res) => {
       gallons: Number(gallons),
       miles: Number(miles),
       pricePerGallon: Number(pricePerGallon),
+      mpg,
       photoUrl: photoUrl || null,
     });
 
     res.status(201).json(ticket);
+
   } catch (error) {
     console.error("❌ Error creando ticket:", error);
-    res.status(500).json({ message: "Error creando ticket" });
+    res.status(500).json({
+      message: "Error creando ticket",
+      error: error.message,
+    });
   }
 };
 
-// ===============================
+// =======================================
 // GET ALL
-// ===============================
+// =======================================
 export const getTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find().populate("truck");
@@ -58,9 +66,9 @@ export const getTickets = async (req, res) => {
   }
 };
 
-// ===============================
+// =======================================
 // GET BY ID
-// ===============================
+// =======================================
 export const getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id).populate("truck");
@@ -73,21 +81,23 @@ export const getTicketById = async (req, res) => {
   }
 };
 
-// ===============================
+// =======================================
 // UPDATE
-// ===============================
+// =======================================
 export const updateTicket = async (req, res) => {
   try {
     const data = req.body;
 
-    if (data.gallons) data.gallons = Number(data.gallons);
-    if (data.miles) data.miles = Number(data.miles);
-    if (data.pricePerGallon)
-      data.pricePerGallon = Number(data.pricePerGallon);
+    // Recalcular MPG si cambian millas o galones
+    if (data.miles && data.gallons) {
+      data.mpg = Number(data.miles) / Number(data.gallons);
+    }
 
-    const ticket = await Ticket.findByIdAndUpdate(req.params.id, data, {
-      new: true,
-    });
+    const ticket = await Ticket.findByIdAndUpdate(
+      req.params.id,
+      data,
+      { new: true }
+    );
 
     if (!ticket)
       return res.status(404).json({ message: "Ticket no encontrado" });
@@ -98,9 +108,9 @@ export const updateTicket = async (req, res) => {
   }
 };
 
-// ===============================
+// =======================================
 // DELETE
-// ===============================
+// =======================================
 export const deleteTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndDelete(req.params.id);

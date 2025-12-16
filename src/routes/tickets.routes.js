@@ -1,6 +1,4 @@
 import { Router } from "express";
-import { authMiddleware } from "../middleware/auth.js";
-
 import {
   createTicket,
   getTickets,
@@ -9,11 +7,13 @@ import {
   deleteTicket,
 } from "../controllers/ticket.controller.js";
 
+import { authMiddleware } from "../middlewares/auth.js";
+
 const router = Router();
 
+// solo admin
 router.use(authMiddleware);
 
-// CRUD ADMIN
 router.post("/", createTicket);
 router.get("/", getTickets);
 router.get("/:id", getTicketById);
