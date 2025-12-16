@@ -1,3 +1,4 @@
+// src/routes/ticket.routes.js
 import { Router } from "express";
 import {
   createTicket,
@@ -7,14 +8,9 @@ import {
   deleteTicket,
 } from "../controllers/ticket.controller.js";
 
-import { authMiddleware } from "../middleware/auth.js";
-
 const router = Router();
 
-// solo admin
-router.use(authMiddleware);
-
-router.post("/", createTicket);
+router.post("/", createTicket);        // ⬅️ SIN multer
 router.get("/", getTickets);
 router.get("/:id", getTicketById);
 router.put("/:id", updateTicket);

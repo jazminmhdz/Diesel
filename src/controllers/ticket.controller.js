@@ -13,7 +13,6 @@ export const createTicket = async (req, res) => {
       gallons,
       miles,
       pricePerGallon,
-      photoUrl,
     } = req.body;
 
     // Validaciones
@@ -29,9 +28,7 @@ export const createTicket = async (req, res) => {
       return res.status(404).json({ message: "El camión no existe" });
     }
 
-    // Calcular MPG 🔥
-    const mpg = Number(miles) / Number(gallons);
-
+    // Crear ticket (SIN mpg)
     const ticket = await Ticket.create({
       truck,
       date: new Date(date),
@@ -39,8 +36,7 @@ export const createTicket = async (req, res) => {
       gallons: Number(gallons),
       miles: Number(miles),
       pricePerGallon: Number(pricePerGallon),
-      mpg,
-      photoUrl: photoUrl || null,
+      photoUrl: req.file ? `/uploads/${req.file.filename}` : null,
     });
 
     res.status(201).json(ticket);
@@ -86,16 +82,9 @@ export const getTicketById = async (req, res) => {
 // =======================================
 export const updateTicket = async (req, res) => {
   try {
-    const data = req.body;
-
-    // Recalcular MPG si cambian millas o galones
-    if (data.miles && data.gallons) {
-      data.mpg = Number(data.miles) / Number(data.gallons);
-    }
-
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
-      data,
+      req.body,
       { new: true }
     );
 
