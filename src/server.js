@@ -9,6 +9,11 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import ticketRoutes from "./routes/tickets.routes.js";
+
+app.use("/api/tickets", ticketRoutes);
+
+
 // IMPORTAR RUTAS AQUÍ (solo una vez)
 import driversAdminRoutes from "./routes/driversAdmin.routes.js";
 

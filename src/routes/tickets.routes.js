@@ -1,6 +1,6 @@
-// src/routes/ticket.routes.js
 import { Router } from "express";
-import upload from "../middleware/upload.js";
+import multer from "multer";
+
 import {
   createTicket,
   getTickets,
@@ -10,20 +10,13 @@ import {
 } from "../controllers/ticket.controller.js";
 
 const router = Router();
+const upload = multer({ dest: "uploads/" });
 
-// Crear ticket
+// ADMIN – CRUD TICKETS
 router.post("/", upload.single("photo"), createTicket);
-
-// Obtener todos los tickets
 router.get("/", getTickets);
-
-// Obtener uno por ID
 router.get("/:id", getTicketById);
-
-// Actualizar ticket (también acepta nueva foto)
 router.put("/:id", upload.single("photo"), updateTicket);
-
-// Eliminar ticket
 router.delete("/:id", deleteTicket);
 
 export default router;
