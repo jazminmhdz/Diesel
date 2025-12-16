@@ -1,35 +1,42 @@
 // src/server.js
 import "dotenv/config";
 import express from "express";
-import app from "./app.js";
-import connect from "./db.js";
-import User from "./models/User.js";
-import bcrypt from "bcryptjs";
-
 import path from "path";
 import { fileURLToPath } from "url";
+import bcrypt from "bcryptjs";
 
+import connect from "./db.js";
+import User from "./models/User.js";
+
+// rutas
+import driversAdminRoutes from "./routes/driversAdmin.routes.js";
 import ticketRoutes from "./routes/tickets.routes.js";
 
-app.use("/api/tickets", ticketRoutes);
-
-
-// IMPORTAR RUTAS AQUÍ (solo una vez)
-import driversAdminRoutes from "./routes/driversAdmin.routes.js";
-
+const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Para usar __dirname en ES Modules
+// =======================
+// Middlewares BASE
+// =======================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Para __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servir imágenes y archivos subidos
+// Archivos subidos
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// Registrar rutas
+// =======================
+// Rutas
+// =======================
 app.use("/api/admin/drivers", driversAdminRoutes);
+app.use("/api/admin/tickets", ticketRoutes);
 
-// Crear admin por defecto
+// =======================
+// Admin por defecto
+// =======================
 async function ensureAdminExists() {
   const exists = await User.findOne({ email: "admin@diesel.local" });
 
@@ -45,18 +52,19 @@ async function ensureAdminExists() {
   }
 }
 
-// Conectar DB + iniciar server
+// =======================
+// Start server
+// =======================
 connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log("✅ MongoDB conectado correctamente");
-
+    console.log("✅ MongoDB conectado");
     await ensureAdminExists();
 
-    app.listen(PORT, () =>
-      console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
-    );
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    });
   })
   .catch((err) => {
-    console.error("❌ Error al conectar con MongoDB:", err.message);
+    console.error("❌ Error MongoDB:", err.message);
     process.exit(1);
   });

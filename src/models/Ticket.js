@@ -23,9 +23,9 @@ const ticketSchema = new mongoose.Schema(
       required: true,
     },
 
-    mpg: {
+    mpg: {                     // 🔥 AQUI ESTÁ LA CLAVE
       type: Number,
-      required: true, // 🔥 CLAVE PARA RENDIMIENTOS
+      required: true,
     },
 
     date: {
