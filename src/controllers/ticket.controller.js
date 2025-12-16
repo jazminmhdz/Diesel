@@ -1,4 +1,3 @@
-// controllers/ticket.controller.js
 import Ticket from "../models/Ticket.js";
 import Truck from "../models/Truck.js";
 
