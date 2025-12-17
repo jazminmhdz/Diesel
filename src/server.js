@@ -1,4 +1,3 @@
-// src/server.js
 import "dotenv/config";
 import express from "express";
 import path from "path";
@@ -7,39 +6,32 @@ import bcrypt from "bcryptjs";
 
 import connect from "./db.js";
 import User from "./models/User.js";
-import reportsRoutes from "./routes/reports.routes.js";
 
-app.use("/api/admin/reports", reportsRoutes);
-
-// rutas
+// Rutas
 import driversAdminRoutes from "./routes/driversAdmin.routes.js";
 import ticketRoutes from "./routes/tickets.routes.js";
+import reportsRoutes from "./routes/reports.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// =======================
-// Middlewares BASE
-// =======================
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Para __dirname en ES Modules
+// __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Archivos subidos
+// uploads
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// =======================
 // Rutas
-// =======================
 app.use("/api/admin/drivers", driversAdminRoutes);
 app.use("/api/admin/tickets", ticketRoutes);
+app.use("/api/admin/reports", reportsRoutes);
 
-// =======================
-// Admin por defecto
-// =======================
+// Admin default
 async function ensureAdminExists() {
   const exists = await User.findOne({ email: "admin@diesel.local" });
 
@@ -51,21 +43,19 @@ async function ensureAdminExists() {
       role: "admin",
     });
 
-    console.log("🔐 Admin creado: admin@diesel.local / admin123");
+    console.log("🔐 Admin creado");
   }
 }
 
-// =======================
-// Start server
-// =======================
+// Start
 connect(process.env.MONGO_URI)
   .then(async () => {
     console.log("✅ MongoDB conectado");
     await ensureAdminExists();
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-    });
+    app.listen(PORT, () =>
+      console.log(`🚀 Servidor corriendo en ${PORT}`)
+    );
   })
   .catch((err) => {
     console.error("❌ Error MongoDB:", err.message);

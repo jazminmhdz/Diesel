@@ -2,62 +2,100 @@
 import Ticket from "../models/Ticket.js";
 import Truck from "../models/Truck.js";
 
-// 📊 Rendimiento semanal por camión
+// ===============================
+// 📊 RENDIMIENTO POR CAMIÓN
+// ===============================
 export const getPerformance = async (req, res) => {
   try {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { startDate, endDate } = req.query;
 
-    const tickets = await Ticket.find({ date: { $gte: weekAgo } }).populate(
+    const filter = {};
+    if (startDate && endDate) {
+      filter.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
+    const tickets = await Ticket.find(filter).populate(
       "truck",
       "economicNumber"
     );
 
     const stats = {};
-    for (const t of tickets) {
-      const truckNum = t.truck?.economicNumber || "Desconocido";
-      if (!stats[truckNum]) stats[truckNum] = { miles: 0, gallons: 0, count: 0 };
-      stats[truckNum].miles += t.miles;
-      stats[truckNum].gallons += t.gallons;
-      stats[truckNum].count++;
-    }
 
-    const result = Object.keys(stats).map((truck) => {
-      const { miles, gallons, count } = stats[truck];
-      const avgMpg = gallons > 0 ? miles / gallons : 0;
-      return { truck, miles, gallons, avgMpg, registros: count };
+    tickets.forEach((t) => {
+      if (!t.truck) return;
+
+      const truckId = t.truck._id.toString();
+
+      if (!stats[truckId]) {
+        stats[truckId] = {
+          truck: t.truck.economicNumber,
+          miles: 0,
+          gallons: 0,
+          tickets: 0,
+        };
+      }
+
+      stats[truckId].miles += t.miles;
+      stats[truckId].gallons += t.gallons;
+      stats[truckId].tickets += 1;
     });
 
+    const result = Object.values(stats).map((t) => ({
+      truck: t.truck,
+      totalMiles: t.miles,
+      totalGallons: t.gallons,
+      avgMpg: t.gallons > 0 ? t.miles / t.gallons : 0,
+      tickets: t.tickets,
+    }));
+
     res.json(result);
-  } catch (err) {
-    res.status(500).json({ message: "Error generando reporte", error: err.message });
+  } catch (error) {
+    console.error("❌ Error en rendimiento:", error);
+    res.status(500).json({
+      message: "Error generando reporte de rendimiento",
+      error: error.message,
+    });
   }
 };
 
-// ⚠️ Alertas de bajo rendimiento
+// ===============================
+// ⚠️ ALERTAS DE BAJO RENDIMIENTO
+// ===============================
 export const getAlerts = async (req, res) => {
   try {
-    const tickets = await Ticket.find()
-      .populate("truck", "economicNumber expectedMpgMin")
-      .sort({ date: -1 })
-      .limit(20);
+    const { minMpg = 5 } = req.query;
 
-    const alerts = tickets
-      .filter(
-        (t) =>
-          t.truck?.expectedMpgMin &&
-          t.mpg < Number(t.truck.expectedMpgMin)
-      )
-      .map((t) => ({
-        truck: t.truck?.economicNumber,
-        mpg: t.mpg,
-        minExpected: t.truck?.expectedMpgMin,
-        date: t.date,
-        state: t.state,
-      }));
+    const tickets = await Ticket.find().populate(
+      "truck",
+      "economicNumber"
+    );
+
+    const alerts = [];
+
+    tickets.forEach((t) => {
+      const mpg = t.gallons > 0 ? t.miles / t.gallons : 0;
+
+      if (mpg < Number(minMpg)) {
+        alerts.push({
+          truck: t.truck?.economicNumber || "N/A",
+          mpg,
+          miles: t.miles,
+          gallons: t.gallons,
+          date: t.date,
+          state: t.state,
+        });
+      }
+    });
 
     res.json(alerts);
-  } catch (err) {
-    res.status(500).json({ message: "Error obteniendo alertas", error: err.message });
+  } catch (error) {
+    console.error("❌ Error en alertas:", error);
+    res.status(500).json({
+      message: "Error obteniendo alertas",
+      error: error.message,
+    });
   }
 };
