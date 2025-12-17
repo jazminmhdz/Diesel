@@ -7,6 +7,9 @@ import bcrypt from "bcryptjs";
 
 import connect from "./db.js";
 import User from "./models/User.js";
+import reportsRoutes from "./routes/reports.routes.js";
+
+app.use("/api/admin/reports", reportsRoutes);
 
 // rutas
 import driversAdminRoutes from "./routes/driversAdmin.routes.js";
